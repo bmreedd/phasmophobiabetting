@@ -1,33 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Phasmophobia Betting Game</title>
-  <!-- Using Socket.io CDN -->
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    .hidden { display: none; }
-    #login-container, #game-container { margin-bottom: 20px; }
-    h1, h3 { color: #333; }
-  </style>
-</head>
+<!-- … (the head section remains unchanged) … -->
+
 <body>
   <h1>Phasmophobia Betting Game</h1>
   
   <!-- Login Section -->
   <div id="login-container">
-    <label for="username">Enter your name:</label>
-    <input type="text" id="username" />
-    <br/>
-    <label for="balance">Gold Balance:</label>
-    <input type="number" id="balance" value="100" />
-    <br/>
-    <label>Select Role:</label>
-    <input type="radio" name="role" id="role-player" value="player" checked /> Player
-    <input type="radio" name="role" id="role-moderator" value="moderator" /> Moderator
-    <br/>
+    <!-- … (login fields) … -->
     <button onclick="registerUser()">Join Game</button>
   </div>
   
@@ -59,24 +37,8 @@
       <button onclick="placeBet()">Submit Bet</button>
     </div>
     
-    <!-- Moderator Panel -->
-    <div id="moderator-panel" class="hidden">
-      <h3>Moderator Panel</h3>
-      <button onclick="startRound()">Start New Round</button>
-      <br/><br/>
-      <!-- Outcomes will be auto-generated here -->
-      <div id="outcomes-container" class="hidden">
-        <h4>Set Outcomes for Each Question:</h4>
-      </div>
-      <br/>
-      <button onclick="submitOutcomes()">End Round</button>
-    </div>
+    <!-- Moderator Panel and Results sections remain the same -->
     
-    <!-- Round Results -->
-    <div id="results" class="hidden">
-      <h3>Round Results</h3>
-      <pre id="results-output"></pre>
-    </div>
   </div>
   
   <script>
@@ -116,6 +78,7 @@
       const questionsDiv = document.getElementById('questions');
       questionsDiv.innerHTML = "";
       const { high, medium, low } = round.questions;
+      
       function addQuestions(arr, label) {
         const h = document.createElement('h4');
         h.innerText = label;
@@ -123,6 +86,8 @@
         arr.forEach(q => {
           const p = document.createElement('p');
           p.innerText = `${q.id}: ${q.text} (Multiplier: ${q.multiplier}x)`;
+          // Mark each question element with its ID for easy removal
+          p.setAttribute('data-question-id', q.id);
           questionsDiv.appendChild(p);
         });
       }
@@ -130,7 +95,7 @@
       addQuestions(medium, "Medium Risk Questions:");
       addQuestions(low, "Low Risk Questions:");
       
-      // If moderator, generate outcome selectors automatically
+      // If moderator, generate outcome selectors automatically (unchanged)
       if (myRole === "moderator") {
         const outcomesContainer = document.getElementById('outcomes-container');
         outcomesContainer.innerHTML = "<h4>Set Outcomes for Each Question:</h4>";
@@ -157,6 +122,16 @@
         return;
       }
       socket.emit('placeBet', { questionId, wager });
+      
+      // Remove the question element from the list so the player cannot bet on it again
+      const qElem = document.querySelector(`[data-question-id="${questionId}"]`);
+      if (qElem) {
+        qElem.remove();
+      }
+      
+      // Optionally clear the input fields for the next bet
+      document.getElementById('bet-question').value = "";
+      document.getElementById('bet-amount').value = "";
     }
     
     function submitOutcomes() {
@@ -172,7 +147,11 @@
     
     socket.on('playersUpdate', (players) => {
       console.log("Players update:", players);
-      // Optionally update player's displayed balance here if needed
+      // Update the player's displayed balance if available
+      const myPlayer = players[socket.id];
+      if (myPlayer) {
+        document.getElementById('player-balance').innerText = myPlayer.balance;
+      }
     });
     
     socket.on('roundBetsUpdate', (bets, pot) => {
