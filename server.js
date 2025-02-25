@@ -22,26 +22,28 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Data structures
-let players = {}; // keyed by socket.id: { username, balance, role, socketId }
+// ----- Data Structures ----- //
+
+let players = {}; // { socketId: { username, balance, role, socketId } }
 let moderator = null;
 let currentRound = null; // holds current round data
 
-// Sample question pools (expand these arrays as needed)
+// Sample question pools (expand these as needed)
+// NOTE: In your final product, you would expand these arrays to include 20, 40, and 60 questions respectively.
 const highRiskQuestions = [
-  { id: 'H1', text: "Will the player die within the first 5 minutes?", multiplier: 5 },
-  { id: 'H2', text: "Will the player survive with less than 10% sanity?", multiplier: 8 }
+  { id: 'H1', text: "Will [PLAYER] die within the first 5 minutes? (Max wager 10k)", multiplier: 5 },
+  { id: 'H2', text: "Will [PLAYER] survive with less than 10% sanity?", multiplier: 8 }
 ];
 const mediumRiskQuestions = [
-  { id: 'M1', text: "Will the first ghost event be a light flicker?", multiplier: 3 },
-  { id: 'M2', text: "Will the player burn a smudge stick before it's needed?", multiplier: 3 }
+  { id: 'M1', text: "Will the first ghost event be a sudden light flicker?", multiplier: 3 },
+  { id: 'M2', text: "Will [PLAYER] burn a smudge stick before it's needed?", multiplier: 3 }
 ];
 const lowRiskQuestions = [
-  { id: 'L1', text: "Will the player forget the house keys?", multiplier: 1.5 },
-  { id: 'L2', text: "Will the player check the truck twice before entering?", multiplier: 2 }
+  { id: 'L1', text: "Will [PLAYER] forget the house keys?", multiplier: 1.5 },
+  { id: 'L2', text: "Will [PLAYER] check the truck twice before entering the house?", multiplier: 2 }
 ];
 
-// Utility: Randomly select a number of items from an array
+// Utility: randomly select N items from an array
 function getRandomItems(arr, count) {
   let copy = [...arr];
   let result = [];
@@ -54,7 +56,7 @@ function getRandomItems(arr, count) {
   return result;
 }
 
-// Start a new round by randomly selecting questions
+// Start a new round (optionally with an existing pot)
 function startNewRound(existingPot = 0) {
   const high = getRandomItems(highRiskQuestions, 2);
   const medium = getRandomItems(mediumRiskQuestions, 3);
@@ -62,13 +64,14 @@ function startNewRound(existingPot = 0) {
   currentRound = {
     roundNumber: currentRound ? currentRound.roundNumber + 1 : 1,
     questions: { high, medium, low },
-    bets: {}, // structure: bets[socketId] = array of { questionId, wager }
-    pot: existingPot
+    bets: {}, // bets[socketId] = array of { questionId, wager }
+    pot: Number(existingPot)
   };
   return currentRound;
 }
 
-// Socket.io event handling
+// ----- Socket.io Events ----- //
+
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
 
@@ -80,7 +83,7 @@ io.on('connection', (socket) => {
     io.emit('playersUpdate', players);
   });
 
-  // Moderator starts a new round (optionally with an existing pot amount)
+  // Moderator starts a new round (passing an optional existing pot)
   socket.on('startRound', (existingPot) => {
     if (socket.id === moderator) {
       const round = startNewRound(Number(existingPot) || 0);
@@ -95,37 +98,37 @@ io.on('connection', (socket) => {
     const player = players[socket.id];
     const wager = Number(data.wager);
     if (player && wager <= player.balance) {
+      // Deduct wager immediately
       player.balance -= wager;
       if (!currentRound.bets[socket.id]) {
         currentRound.bets[socket.id] = [];
       }
       currentRound.bets[socket.id].push({ questionId: data.questionId, wager });
-      // Increase the pot with the wager amount (lost bets later feed the pot)
+      // Add wager to the pot (all losing bets eventually add to the pot)
       currentRound.pot += wager;
       io.emit('playersUpdate', players);
       io.emit('roundBetsUpdate', currentRound.bets, currentRound.pot);
     }
   });
 
-  // Moderator ends the round by providing outcomes for each question
-  // outcomes: { "H1": true, "M1": false, ... }
+  // Moderator ends the round by providing outcomes (object where key = questionId and value = true/false)
   socket.on('endRound', (outcomes) => {
     if (socket.id !== moderator || !currentRound) return;
-    // Process each player's bets
+    // Process bets for each player
     for (let sid in currentRound.bets) {
       const bets = currentRound.bets[sid];
       let totalWin = 0;
       bets.forEach(bet => {
-        // Find the question details by ID (search all pools)
+        // Find the question details (search all pools)
         const question = [...highRiskQuestions, ...mediumRiskQuestions, ...lowRiskQuestions]
           .find(q => q.id === bet.questionId);
         if (!question) return;
         const outcome = outcomes[bet.questionId];
         if (outcome === true) {
-          // Winning bet: payout is wager multiplied by question's multiplier
+          // Winning bet: payout = wager * multiplier
           const payout = bet.wager * question.multiplier;
           totalWin += payout;
-          // Deduct payout from the pot if possible; otherwise, pay what remains
+          // Deduct payout from the pot if possible
           if (currentRound.pot >= payout) {
             currentRound.pot -= payout;
           } else {
@@ -133,14 +136,14 @@ io.on('connection', (socket) => {
             currentRound.pot = 0;
           }
         }
-        // Losing bets already contributed to the pot
+        // Losing bets simply remain in the pot
       });
       if (players[sid]) {
         players[sid].balance += totalWin;
       }
     }
     io.emit('roundResults', { players, pot: currentRound.pot, bets: currentRound.bets, outcomes });
-    // Clear round data after processing
+    // Clear the round data
     currentRound = null;
   });
 
