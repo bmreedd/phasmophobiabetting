@@ -38,7 +38,7 @@
     </div>
     
     <div id="instructions">
-      <p>Instructions: In each round, bets are placed on specific questions. The moderator starts rounds and later inputs the outcomes (as true/false for each question). Losing bets add to the pot; winners are paid based on a multiplier.</p>
+      <p>Instructions: In each round, bets are placed on specific questions. The moderator starts rounds and later inputs the outcomes by selecting win or lose for each question. Losing bets add to the pot; winners are paid based on a multiplier.</p>
     </div>
     
     <!-- Round Questions Display -->
@@ -63,10 +63,13 @@
     <div id="moderator-panel" class="hidden">
       <h3>Moderator Panel</h3>
       <button onclick="startRound()">Start New Round</button>
-      <h4>End Round: Enter outcomes as JSON</h4>
-      <textarea id="round-outcomes" rows="5" cols="50" placeholder='e.g., {"H1": true, "M1": false, ...}'></textarea>
+      <br/><br/>
+      <!-- Outcomes will be auto-generated here -->
+      <div id="outcomes-container" class="hidden">
+        <h4>Set Outcomes for Each Question:</h4>
+      </div>
       <br/>
-      <button onclick="endRound()">End Round</button>
+      <button onclick="submitOutcomes()">End Round</button>
     </div>
     
     <!-- Round Results -->
@@ -104,9 +107,12 @@
     }
     
     socket.on('newRound', (round) => {
+      // Show round info and betting interface
       document.getElementById('round-info').classList.remove('hidden');
       document.getElementById('betting-interface').classList.remove('hidden');
       document.getElementById('round-number').innerText = round.roundNumber;
+      
+      // Display questions
       const questionsDiv = document.getElementById('questions');
       questionsDiv.innerHTML = "";
       const { high, medium, low } = round.questions;
@@ -123,6 +129,24 @@
       addQuestions(high, "High Risk Questions:");
       addQuestions(medium, "Medium Risk Questions:");
       addQuestions(low, "Low Risk Questions:");
+      
+      // If moderator, generate outcome selectors automatically
+      if (myRole === "moderator") {
+        const outcomesContainer = document.getElementById('outcomes-container');
+        outcomesContainer.innerHTML = "<h4>Set Outcomes for Each Question:</h4>";
+        const allQuestions = [...high, ...medium, ...low];
+        allQuestions.forEach(q => {
+          const div = document.createElement('div');
+          div.style.marginBottom = "8px";
+          div.innerHTML = `<strong>${q.id}:</strong> ${q.text} 
+            <select id="outcome-${q.id}">
+              <option value="true">Win</option>
+              <option value="false">Lose</option>
+            </select>`;
+          outcomesContainer.appendChild(div);
+        });
+        outcomesContainer.classList.remove('hidden');
+      }
     });
     
     function placeBet() {
@@ -135,19 +159,20 @@
       socket.emit('placeBet', { questionId, wager });
     }
     
-    function endRound() {
-      const outcomesText = document.getElementById('round-outcomes').value;
-      try {
-        const outcomes = JSON.parse(outcomesText);
-        socket.emit('endRound', outcomes);
-      } catch (e) {
-        alert("Invalid outcomes format. Please provide valid JSON.");
-      }
+    function submitOutcomes() {
+      const outcomes = {};
+      const outcomesContainer = document.getElementById('outcomes-container');
+      const selects = outcomesContainer.querySelectorAll('select');
+      selects.forEach(select => {
+        const questionId = select.id.replace('outcome-', '');
+        outcomes[questionId] = (select.value === "true");
+      });
+      socket.emit('endRound', outcomes);
     }
     
     socket.on('playersUpdate', (players) => {
       console.log("Players update:", players);
-      // (You could update the player's displayed balance here if needed)
+      // Optionally update player's displayed balance here if needed
     });
     
     socket.on('roundBetsUpdate', (bets, pot) => {
