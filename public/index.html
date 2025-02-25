@@ -1,98 +1,65 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phasmophobia Betting Game</title>
-    <script src="/socket.io/socket.io.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        #game-container { display: none; }
-        .hidden { display: none; }
-    </style>
-</head>
-<body>
-    <h1>Phasmophobia Betting Game</h1>
-    <div id="login-container">
-        <label for="username">Enter your name:</label>
-        <input type="text" id="username">
-        <button onclick="registerUser()">Join</button>
-    </div>
+<script>
+    // Log when the socket connects
+    const socket = io();
+    socket.on('connect', () => {
+        console.log('Connected to server with id:', socket.id);
+    });
+
+    let username = "";
+    let isModerator = false;
     
-    <div id="game-container" class="hidden">
-        <h2>Welcome, <span id="player-name"></span></h2>
-        <p>Gold Balance: <span id="gold-balance">100</span></p>
-        <div id="betting-container">
-            <h3>Place Your Bets</h3>
-            <ul id="bet-list"></ul>
-            <button onclick="submitBets()">Submit Bets</button>
-        </div>
-        <div id="moderator-controls" class="hidden">
-            <h3>Moderator Controls</h3>
-            <button onclick="startRound()">Start Round</button>
-            <button onclick="endRound()">End Round</button>
-            <select id="round-outcome">
-                <option value="win">Win</option>
-                <option value="lose">Lose</option>
-            </select>
-        </div>
-    </div>
+    function registerUser() {
+        username = document.getElementById('username').value;
+        if (!username) return;
+        console.log('Registering user:', username);  // Debug log
+
+        socket.emit('register', username);
+        document.getElementById('login-container').classList.add('hidden');
+        document.getElementById('game-container').classList.remove('hidden');
+        document.getElementById('player-name').innerText = username;
+    }
     
-    <script>
-        const socket = io();
-        let username = "";
-        let isModerator = false;
-        
-        function registerUser() {
-            username = document.getElementById('username').value;
-            if (!username) return;
-            socket.emit('register', username);
-            document.getElementById('login-container').classList.add('hidden');
-            document.getElementById('game-container').classList.remove('hidden');
-            document.getElementById('player-name').innerText = username;
+    // Existing functions...
+    function startRound() {
+        if (isModerator) socket.emit('startGame', 0);
+    }
+
+    function endRound() {
+        if (isModerator) {
+            let outcome = document.getElementById('round-outcome').value;
+            socket.emit('endRound', outcome);
         }
+    }
 
-        function startRound() {
-            if (isModerator) socket.emit('startGame', 0);
+    function submitBets() {
+        let betAmount = prompt("Enter bet amount:");
+        let betChoice = prompt("Enter your bet choice:");
+        if (betAmount && betChoice) {
+            socket.emit('placeBet', { username, amount: parseInt(betAmount), choice: betChoice });
         }
-
-        function endRound() {
-            if (isModerator) {
-                let outcome = document.getElementById('round-outcome').value;
-                socket.emit('endRound', outcome);
-            }
+    }
+    
+    socket.on('updatePlayers', (players) => {
+        console.log('Players updated:', players); // Debug log
+        if (players[username]) {
+            document.getElementById('gold-balance').innerText = players[username].balance;
         }
+    });
 
-        function submitBets() {
-            let betAmount = prompt("Enter bet amount:");
-            let betChoice = prompt("Enter your bet choice:");
-            if (betAmount && betChoice) {
-                socket.emit('placeBet', { username, amount: parseInt(betAmount), choice: betChoice });
-            }
+    socket.on('moderatorSet', (mod) => {
+        if (mod === username) {
+            isModerator = true;
+            document.getElementById('moderator-controls').classList.remove('hidden');
         }
-        
-        socket.on('updatePlayers', (players) => {
-            if (players[username]) {
-                document.getElementById('gold-balance').innerText = players[username].balance;
-            }
-        });
+    });
 
-        socket.on('moderatorSet', (mod) => {
-            if (mod === username) {
-                isModerator = true;
-                document.getElementById('moderator-controls').classList.remove('hidden');
-            }
-        });
-
-        socket.on('updateBets', (bets, totalPot) => {
-            let betList = document.getElementById('bet-list');
-            betList.innerHTML = "";
-            for (let player in bets) {
-                let betItem = document.createElement('li');
-                betItem.innerText = `${player} bet ${bets[player].amount} on ${bets[player].choice}`;
-                betList.appendChild(betItem);
-            }
-        });
-    </script>
-</body>
-</html>
+    socket.on('updateBets', (bets, totalPot) => {
+        console.log('Bets updated:', bets, 'Total Pot:', totalPot); // Debug log
+        let betList = document.getElementById('bet-list');
+        betList.innerHTML = "";
+        for (let player in bets) {
+            let betItem = document.createElement('li');
+            betItem.innerText = `${player} bet ${bets[player].amount} on ${bets[player].choice}`;
+            betList.appendChild(betItem);
+        }
+    });
