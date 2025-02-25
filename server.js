@@ -14,7 +14,12 @@ const io = new Server(server, {
 });
 
 app.use(cors());
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 app.use(express.static(path.join(__dirname, 'public')));
+
 
 let players = {};
 let currentBets = {};
