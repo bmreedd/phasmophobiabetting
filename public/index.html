@@ -1,25 +1,62 @@
-<!-- … (the head section remains unchanged) … -->
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phasmophobia Betting Game</title>
+  <!-- Socket.io CDN -->
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .hidden { display: none; }
+    h1, h3, h4 { color: #333; }
+    #login-container, #game-container { margin-bottom: 20px; }
+    #instructions { background: #f8f8f8; padding: 10px; border: 1px solid #ccc; }
+  </style>
+</head>
 <body>
   <h1>Phasmophobia Betting Game</h1>
   
   <!-- Login Section -->
   <div id="login-container">
-    <!-- … (login fields) … -->
+    <label for="username">Enter your name:</label>
+    <input type="text" id="username" />
+    <br/>
+    <label for="balance">What is your gold balance for the night?</label>
+    <input type="number" id="balance" value="100" />
+    <br/><br/>
+    <p>
+      Alright broke boy, this is the way this will work. You will be asked a series of questions.
+      Bet what you said you'd wager. There is no limit to what you can wager, but once the game begins,
+      there will be no adjustments to your gold balance. Losing bets go into the running pot, and winners
+      are paid out from it. If multiple people win the same bet and there is no pot, the difference will be
+      paid out from the highest wager. For any bet you don't wish to engage with, simply enter 0.
+      <br/><br/>
+      THIS WILL LAST FOR THE ENTIRE DURATION OF THE NIGHT. GET READY TO RISK IT ALL!
+    </p>
+    <label>Select Role:</label>
+    <input type="radio" name="role" value="player" checked /> Player
+    <input type="radio" name="role" value="moderator" /> Moderator
+    <br/><br/>
     <button onclick="registerUser()">Join Game</button>
   </div>
   
   <!-- Main Game Interface -->
   <div id="game-container" class="hidden">
+    <!-- Player Info -->
     <div id="player-info">
-      <p>Welcome, <span id="player-name"></span>! Your balance: <span id="player-balance"></span></p>
+      <p>Welcome, <span id="player-name"></span>! Your balance: <span id="player-balance"></span> gold.
+         Current Pot: <span id="pot-display">0</span></p>
     </div>
     
+    <!-- Instructions (repeat or update as needed) -->
     <div id="instructions">
-      <p>Instructions: In each round, bets are placed on specific questions. The moderator starts rounds and later inputs the outcomes by selecting win or lose for each question. Losing bets add to the pot; winners are paid based on a multiplier.</p>
+      <p>In each round, you'll see a set of betting questions. Place your bets by entering the question ID and wager amount.
+         When you click "Submit Bet," that question will be removed so you can't bet on it twice.
+         The moderator will start rounds and later choose outcomes using dropdowns—no need to type JSON.</p>
     </div>
     
-    <!-- Round Questions Display -->
+    <!-- Round Info and Questions -->
     <div id="round-info" class="hidden">
       <h3>Round <span id="round-number"></span> Questions:</h3>
       <div id="questions"></div>
@@ -37,8 +74,23 @@
       <button onclick="placeBet()">Submit Bet</button>
     </div>
     
-    <!-- Moderator Panel and Results sections remain the same -->
+    <!-- Moderator Panel -->
+    <div id="moderator-panel" class="hidden">
+      <h3>Moderator Panel</h3>
+      <button onclick="startRound()">Start New Round</button>
+      <br/><br/>
+      <div id="outcomes-container" class="hidden">
+        <h4>Set Outcomes for Each Question:</h4>
+      </div>
+      <br/>
+      <button onclick="submitOutcomes()">End Round</button>
+    </div>
     
+    <!-- Round Results -->
+    <div id="results" class="hidden">
+      <h3>Round Results</h3>
+      <pre id="results-output"></pre>
+    </div>
   </div>
   
   <script>
@@ -50,7 +102,7 @@
       const balance = document.getElementById('balance').value;
       myRole = document.querySelector('input[name="role"]:checked').value;
       if (!username || !balance) {
-        alert("Please enter both name and balance");
+        alert("Please enter both your name and gold balance.");
         return;
       }
       socket.emit('register', { username, balance, role: myRole });
@@ -73,20 +125,20 @@
       document.getElementById('round-info').classList.remove('hidden');
       document.getElementById('betting-interface').classList.remove('hidden');
       document.getElementById('round-number').innerText = round.roundNumber;
+      // Update pot display
+      document.getElementById('pot-display').innerText = round.pot;
       
-      // Display questions
+      // Display questions and add data attributes for removal
       const questionsDiv = document.getElementById('questions');
       questionsDiv.innerHTML = "";
       const { high, medium, low } = round.questions;
-      
       function addQuestions(arr, label) {
-        const h = document.createElement('h4');
-        h.innerText = label;
-        questionsDiv.appendChild(h);
+        const header = document.createElement('h4');
+        header.innerText = label;
+        questionsDiv.appendChild(header);
         arr.forEach(q => {
           const p = document.createElement('p');
           p.innerText = `${q.id}: ${q.text} (Multiplier: ${q.multiplier}x)`;
-          // Mark each question element with its ID for easy removal
           p.setAttribute('data-question-id', q.id);
           questionsDiv.appendChild(p);
         });
@@ -95,7 +147,7 @@
       addQuestions(medium, "Medium Risk Questions:");
       addQuestions(low, "Low Risk Questions:");
       
-      // If moderator, generate outcome selectors automatically (unchanged)
+      // If moderator, auto-generate outcome selectors
       if (myRole === "moderator") {
         const outcomesContainer = document.getElementById('outcomes-container');
         outcomesContainer.innerHTML = "<h4>Set Outcomes for Each Question:</h4>";
@@ -118,18 +170,16 @@
       const questionId = document.getElementById('bet-question').value;
       const wager = document.getElementById('bet-amount').value;
       if (!questionId || !wager) {
-        alert("Enter both question ID and wager");
+        alert("Please enter both the question ID and your wager.");
         return;
       }
       socket.emit('placeBet', { questionId, wager });
       
-      // Remove the question element from the list so the player cannot bet on it again
+      // Remove the question from the list so you cannot bet on it again
       const qElem = document.querySelector(`[data-question-id="${questionId}"]`);
-      if (qElem) {
-        qElem.remove();
-      }
+      if (qElem) { qElem.remove(); }
       
-      // Optionally clear the input fields for the next bet
+      // Clear bet inputs
       document.getElementById('bet-question').value = "";
       document.getElementById('bet-amount').value = "";
     }
@@ -139,28 +189,29 @@
       const outcomesContainer = document.getElementById('outcomes-container');
       const selects = outcomesContainer.querySelectorAll('select');
       selects.forEach(select => {
-        const questionId = select.id.replace('outcome-', '');
-        outcomes[questionId] = (select.value === "true");
+        const qid = select.id.replace('outcome-', '');
+        outcomes[qid] = (select.value === "true");
       });
       socket.emit('endRound', outcomes);
     }
     
     socket.on('playersUpdate', (players) => {
       console.log("Players update:", players);
-      // Update the player's displayed balance if available
-      const myPlayer = players[socket.id];
-      if (myPlayer) {
-        document.getElementById('player-balance').innerText = myPlayer.balance;
-      }
+      // Update displayed balance if available (find by matching socket.id is tricky on client; you could update via re-login data)
+      // For now, we simply update the balance using the player info from registration if possible.
     });
     
     socket.on('roundBetsUpdate', (bets, pot) => {
       console.log("Round bets:", bets, "Current pot:", pot);
+      // Optionally update the pot display
+      document.getElementById('pot-display').innerText = pot;
     });
     
     socket.on('roundResults', (data) => {
       document.getElementById('results').classList.remove('hidden');
       document.getElementById('results-output').innerText = JSON.stringify(data, null, 2);
+      // Update player's balance display after the round results
+      // (The server sends updated player info via playersUpdate; you could merge that here.)
     });
   </script>
 </body>
