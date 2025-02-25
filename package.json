@@ -1,0 +1,15 @@
+{
+  "name": "phasmophobia-betting-game",
+  "version": "1.0.0",
+  "description": "A real-time betting game for Phasmophobia players and spectators.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "http": "0.0.1-security",
+    "socket.io": "^4.5.4",
+    "cors": "^2.8.5"
+  }
+}
