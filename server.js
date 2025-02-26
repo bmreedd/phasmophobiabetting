@@ -28,7 +28,7 @@ let players = {}; // keyed by socket id: { username, balance, role, socketId }
 let moderator = null;
 let currentRound = null; // { roundNumber, questions, bets, pot, activePlayer }
 
-// Sample question pools (expand as needed – final product should have 20 high, 40 medium, 60 low)
+// Sample question pools – expand these as needed
 const highRiskQuestions = [
   { id: 'H1', text: "Will [PLAYER] die within the first 5 minutes? (Max wager 10k)", multiplier: 5 },
   { id: 'H2', text: "Will [PLAYER] survive with less than 10% sanity?", multiplier: 8 }
@@ -54,10 +54,14 @@ function getRandomItems(arr, count) {
   return result;
 }
 
+// Start a new round; filter out any questions mentioning "sanity"
 function startNewRound(existingPot = 0) {
-  const high = getRandomItems(highRiskQuestions, 2);
-  const medium = getRandomItems(mediumRiskQuestions, 3);
-  const low = getRandomItems(lowRiskQuestions, 4);
+  const filteredHigh = highRiskQuestions.filter(q => !q.text.toLowerCase().includes("sanity"));
+  const filteredMedium = mediumRiskQuestions.filter(q => !q.text.toLowerCase().includes("sanity"));
+  const filteredLow = lowRiskQuestions.filter(q => !q.text.toLowerCase().includes("sanity"));
+  const high = getRandomItems(filteredHigh, 2);
+  const medium = getRandomItems(filteredMedium, 3);
+  const low = getRandomItems(filteredLow, 4);
   currentRound = {
     roundNumber: currentRound ? currentRound.roundNumber + 1 : 1,
     questions: { high, medium, low },
@@ -72,7 +76,7 @@ function startNewRound(existingPot = 0) {
 
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
-  
+
   // Registration: data = { username, balance, role }
   socket.on('register', (data) => {
     const { username, balance, role } = data;
@@ -128,7 +132,7 @@ io.on('connection', (socket) => {
           .find(q => q.id === bet.questionId);
         if (!question) return;
         const outcome = outcomes[bet.questionId];
-        // Record stats
+        // Prepare stats
         if (!roundStats.correctBets[bet.questionId]) roundStats.correctBets[bet.questionId] = [];
         if (!roundStats.incorrectBets[bet.questionId]) roundStats.incorrectBets[bet.questionId] = [];
         if (outcome === true) {
@@ -161,7 +165,6 @@ io.on('connection', (socket) => {
     currentRound = null;
   });
   
-  // Allow clients to request a player's name by socket id (for active player display)
   socket.on('getPlayerName', (socketId) => {
     if (players[socketId]) {
       socket.emit('activePlayerName', players[socketId]);
