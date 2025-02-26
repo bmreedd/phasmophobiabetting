@@ -55,9 +55,9 @@
     <!-- Instructions -->
     <div id="instructions">
       <p>
-        In each round, you'll see a set of betting questions. Place your bets by entering the question ID and wager amount.
-        When you click "Submit Bet," that question will be removed so you can't bet on it twice.
-        The moderator will start rounds and later choose outcomes using dropdowns—no need to type JSON.
+        In each round, you'll see a set of betting questions. Place your bets by selecting a question from the dropdown
+        (only the pre‑selected questions for that round appear) and entering your wager amount. When you click "Submit Bet,"
+        that question is removed so you can't bet on it twice. The moderator will start rounds and later choose outcomes using dropdowns.
       </p>
     </div>
     
@@ -70,8 +70,8 @@
     <!-- Betting Interface -->
     <div id="betting-interface" class="hidden">
       <h3>Place Your Bet</h3>
-      <label for="bet-question">Question ID (e.g., H1):</label>
-      <input type="text" id="bet-question" placeholder="Enter question ID" />
+      <label for="bet-question-select">Select Question:</label>
+      <select id="bet-question-select"></select>
       <br/>
       <label for="bet-amount">Wager Amount:</label>
       <input type="number" id="bet-amount" />
@@ -110,7 +110,8 @@
     const socket = io();
     let myRole = "player";
     let mySocketId = "";
-    
+    let roundQuestions = []; // Will hold all questions for the current round
+
     socket.on('connect', () => {
       mySocketId = socket.id;
       console.log("Connected with id:", mySocketId);
@@ -150,11 +151,11 @@
       document.getElementById('round-number').innerText = round.roundNumber;
       document.getElementById('pot-display').innerText = round.pot;
       
-      // Clear previous questions and generate new ones
+      // Clear previous questions and generate new ones in display
       const questionsDiv = document.getElementById('questions');
       questionsDiv.innerHTML = "";
       const { high, medium, low } = round.questions;
-      
+      roundQuestions = [...high, ...medium, ...low]; // store all questions for use in dropdown
       function addQuestions(arr, label) {
         const header = document.createElement('h4');
         header.innerText = label;
@@ -169,6 +170,18 @@
       addQuestions(high, "High Risk Questions:");
       addQuestions(medium, "Medium Risk Questions:");
       addQuestions(low, "Low Risk Questions:");
+      
+      // Populate the bet-question-select dropdown
+      const betSelect = document.getElementById('bet-question-select');
+      betSelect.innerHTML = "";
+      roundQuestions.forEach(q => {
+        // Optionally filter out sanity-related questions, though server already did
+        if (q.text.toLowerCase().includes("sanity")) return;
+        const option = document.createElement('option');
+        option.value = q.id;
+        option.innerText = `${q.id}: ${q.text} (Multiplier: ${q.multiplier}x)`;
+        betSelect.appendChild(option);
+      });
       
       // For moderator: populate active player dropdown
       if (myRole === "moderator") {
@@ -211,20 +224,24 @@
     }
     
     function placeBet() {
-      const questionId = document.getElementById('bet-question').value;
+      const betSelect = document.getElementById('bet-question-select');
+      const questionId = betSelect.value;
       const wager = document.getElementById('bet-amount').value;
       if (!questionId || !wager) {
-        alert("Please enter both the question ID and your wager.");
+        alert("Please select a question and enter your wager.");
         return;
       }
       socket.emit('placeBet', { questionId, wager });
       
-      // Remove the question from the list so you can't bet on it twice
+      // Remove the selected question from the dropdown and displayed list
+      const optionToRemove = betSelect.querySelector(`option[value="${questionId}"]`);
+      if (optionToRemove) {
+        optionToRemove.remove();
+      }
       const qElem = document.querySelector(`[data-question-id="${questionId}"]`);
       if (qElem) { qElem.remove(); }
       
-      // Clear bet inputs
-      document.getElementById('bet-question').value = "";
+      // Clear wager input
       document.getElementById('bet-amount').value = "";
     }
     
