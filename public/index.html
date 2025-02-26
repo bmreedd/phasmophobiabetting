@@ -4,20 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Phasmophobia Betting Game</title>
-  <!-- Socket.io CDN -->
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     .hidden { display: none; }
     h1, h3, h4 { color: #333; }
-    #login-container, #game-container { margin-bottom: 20px; }
+    #login-container, #game-container, #transition-container { margin-bottom: 20px; }
     #instructions { background: #f8f8f8; padding: 10px; border: 1px solid #ccc; }
   </style>
 </head>
 <body>
   <h1>Phasmophobia Betting Game</h1>
   
-  <!-- Login Section -->
+  <!-- Login Screen -->
   <div id="login-container">
     <label for="username">Enter your name:</label>
     <input type="text" id="username" />
@@ -43,20 +42,23 @@
   
   <!-- Main Game Interface -->
   <div id="game-container" class="hidden">
-    <!-- Player Info -->
     <div id="player-info">
       <p>Welcome, <span id="player-name"></span>! Your balance: <span id="player-balance"></span> gold.
          Current Pot: <span id="pot-display">0</span></p>
+      <div id="active-player-display" class="hidden">
+        <p><strong>Active Player:</strong> <span id="active-player-name"></span> (Sits out this round)</p>
+      </div>
     </div>
     
-    <!-- Instructions (repeat or update as needed) -->
     <div id="instructions">
-      <p>In each round, you'll see a set of betting questions. Place your bets by entering the question ID and wager amount.
-         When you click "Submit Bet," that question will be removed so you can't bet on it twice.
-         The moderator will start rounds and later choose outcomes using dropdowns—no need to type JSON.</p>
+      <p>
+        In each round, you'll see a set of betting questions. Place your bets by entering the question ID and wager amount.
+        When you click "Submit Bet," that question will be removed so you can't bet on it twice.
+        The moderator will start rounds and later choose outcomes using dropdowns—no need to type JSON.
+      </p>
     </div>
     
-    <!-- Round Info and Questions -->
+    <!-- Round Info & Questions -->
     <div id="round-info" class="hidden">
       <h3>Round <span id="round-number"></span> Questions:</h3>
       <div id="questions"></div>
@@ -79,24 +81,37 @@
       <h3>Moderator Panel</h3>
       <button onclick="startRound()">Start New Round</button>
       <br/><br/>
+      <label for="active-player-select">Select Active Player (to sit out):</label>
+      <select id="active-player-select">
+        <!-- Options populated dynamically -->
+      </select>
+      <button onclick="setActivePlayer()">Set Active Player</button>
+      <br/><br/>
       <div id="outcomes-container" class="hidden">
         <h4>Set Outcomes for Each Question:</h4>
       </div>
       <br/>
       <button onclick="submitOutcomes()">End Round</button>
     </div>
-    
-    <!-- Round Results -->
-    <div id="results" class="hidden">
-      <h3>Round Results</h3>
-      <pre id="results-output"></pre>
-    </div>
+  </div>
+  
+  <!-- Transition / Round Results Page -->
+  <div id="transition-container" class="hidden">
+    <h3>Round <span id="transition-round-number"></span> Results</h3>
+    <div id="round-stats"></div>
+    <button onclick="nextRound()">Next Round</button>
   </div>
   
   <script>
     const socket = io();
     let myRole = "player";
-
+    let mySocketId = "";
+    
+    socket.on('connect', () => {
+      mySocketId = socket.id;
+      console.log("Connected with id:", mySocketId);
+    });
+    
     function registerUser() {
       const username = document.getElementById('username').value;
       const balance = document.getElementById('balance').value;
@@ -121,17 +136,21 @@
     }
     
     socket.on('newRound', (round) => {
+      // Hide transition page if visible
+      document.getElementById('transition-container').classList.add('hidden');
+      document.getElementById('game-container').classList.remove('hidden');
+      
       // Show round info and betting interface
       document.getElementById('round-info').classList.remove('hidden');
       document.getElementById('betting-interface').classList.remove('hidden');
       document.getElementById('round-number').innerText = round.roundNumber;
-      // Update pot display
       document.getElementById('pot-display').innerText = round.pot;
       
-      // Display questions and add data attributes for removal
+      // Clear previous questions and generate new ones
       const questionsDiv = document.getElementById('questions');
       questionsDiv.innerHTML = "";
       const { high, medium, low } = round.questions;
+      
       function addQuestions(arr, label) {
         const header = document.createElement('h4');
         header.innerText = label;
@@ -147,24 +166,47 @@
       addQuestions(medium, "Medium Risk Questions:");
       addQuestions(low, "Low Risk Questions:");
       
-      // If moderator, auto-generate outcome selectors
+      // For moderator: populate active player dropdown
       if (myRole === "moderator") {
-        const outcomesContainer = document.getElementById('outcomes-container');
-        outcomesContainer.innerHTML = "<h4>Set Outcomes for Each Question:</h4>";
-        const allQuestions = [...high, ...medium, ...low];
-        allQuestions.forEach(q => {
-          const div = document.createElement('div');
-          div.style.marginBottom = "8px";
-          div.innerHTML = `<strong>${q.id}:</strong> ${q.text} 
-            <select id="outcome-${q.id}">
-              <option value="true">Win</option>
-              <option value="false">Lose</option>
-            </select>`;
-          outcomesContainer.appendChild(div);
-        });
-        outcomesContainer.classList.remove('hidden');
+        const activeSelect = document.getElementById('active-player-select');
+        activeSelect.innerHTML = "";
+        for (let id in window.players) {
+          if (id !== mySocketId && window.players[id].role !== "moderator") {
+            const option = document.createElement('option');
+            option.value = id;
+            option.innerText = window.players[id].username;
+            activeSelect.appendChild(option);
+          }
+        }
+      }
+      
+      // If an active player was set, request their name for display
+      if (round.activePlayer) {
+        socket.emit('getPlayerName', round.activePlayer);
+      } else {
+        document.getElementById('active-player-display').classList.add('hidden');
       }
     });
+    
+    socket.on('activePlayerSet', (activeId) => {
+      // When active player is set, request and display their name
+      socket.emit('getPlayerName', activeId);
+    });
+    
+    socket.on('activePlayerName', (data) => {
+      document.getElementById('active-player-display').classList.remove('hidden');
+      document.getElementById('active-player-name').innerText = data.username;
+      // If this client is the active player, disable betting interface
+      if (data.socketId === mySocketId) {
+        document.getElementById('betting-interface').classList.add('hidden');
+      }
+    });
+    
+    function setActivePlayer() {
+      const activeSelect = document.getElementById('active-player-select');
+      const selectedId = activeSelect.value;
+      socket.emit('setActivePlayer', selectedId);
+    }
     
     function placeBet() {
       const questionId = document.getElementById('bet-question').value;
@@ -175,7 +217,7 @@
       }
       socket.emit('placeBet', { questionId, wager });
       
-      // Remove the question from the list so you cannot bet on it again
+      // Remove the question from the list so you can't bet on it twice
       const qElem = document.querySelector(`[data-question-id="${questionId}"]`);
       if (qElem) { qElem.remove(); }
       
@@ -187,6 +229,25 @@
     function submitOutcomes() {
       const outcomes = {};
       const outcomesContainer = document.getElementById('outcomes-container');
+      // Auto-generate outcome selectors if not already present
+      if (outcomesContainer.innerHTML === "") {
+        outcomesContainer.innerHTML = "<h4>Set Outcomes for Each Question:</h4>";
+        const questionsDiv = document.getElementById('questions');
+        const questionPs = questionsDiv.querySelectorAll('p[data-question-id]');
+        questionPs.forEach(p => {
+          const qid = p.getAttribute('data-question-id');
+          const div = document.createElement('div');
+          div.style.marginBottom = "8px";
+          div.innerHTML = `<strong>${qid}:</strong> ${p.innerText} 
+            <select id="outcome-${qid}">
+              <option value="true">Win</option>
+              <option value="false">Lose</option>
+            </select>`;
+          outcomesContainer.appendChild(div);
+        });
+        outcomesContainer.classList.remove('hidden');
+      }
+      // Gather outcomes
       const selects = outcomesContainer.querySelectorAll('select');
       selects.forEach(select => {
         const qid = select.id.replace('outcome-', '');
@@ -197,22 +258,46 @@
     
     socket.on('playersUpdate', (players) => {
       console.log("Players update:", players);
-      // Update displayed balance if available (find by matching socket.id is tricky on client; you could update via re-login data)
-      // For now, we simply update the balance using the player info from registration if possible.
+      window.players = players;
+      if (players[mySocketId]) {
+        document.getElementById('player-balance').innerText = players[mySocketId].balance;
+      }
     });
     
     socket.on('roundBetsUpdate', (bets, pot) => {
       console.log("Round bets:", bets, "Current pot:", pot);
-      // Optionally update the pot display
       document.getElementById('pot-display').innerText = pot;
     });
     
     socket.on('roundResults', (data) => {
-      document.getElementById('results').classList.remove('hidden');
-      document.getElementById('results-output').innerText = JSON.stringify(data, null, 2);
-      // Update player's balance display after the round results
-      // (The server sends updated player info via playersUpdate; you could merge that here.)
+      // Show transition page with round stats
+      document.getElementById('game-container').classList.add('hidden');
+      document.getElementById('transition-container').classList.remove('hidden');
+      document.getElementById('transition-round-number').innerText = data.roundNumber;
+      const statsDiv = document.getElementById('round-stats');
+      statsDiv.innerHTML = "";
+      const potInfo = document.createElement('p');
+      potInfo.innerText = `Final Pot: ${data.pot} gold`;
+      statsDiv.appendChild(potInfo);
+      // Display stats for each question
+      for (let qid in data.roundStats.correctBets) {
+        const correct = data.roundStats.correctBets[qid] || [];
+        const incorrect = data.roundStats.incorrectBets[qid] || [];
+        const p = document.createElement('p');
+        p.innerText = `${qid} - Correct: ${correct.map(item => `${item.player} (wager: ${item.wager}, payout: ${item.payout})`).join(", ")} | Incorrect: ${incorrect.map(item => `${item.player} (wager: ${item.wager})`).join(", ")}`;
+        statsDiv.appendChild(p);
+      }
     });
+    
+    function nextRound() {
+      // Hide transition page and reset UI for the next round
+      document.getElementById('transition-container').classList.add('hidden');
+      document.getElementById('game-container').classList.remove('hidden');
+      document.getElementById('round-info').classList.add('hidden');
+      document.getElementById('betting-interface').classList.add('hidden');
+      document.getElementById('outcomes-container').classList.add('hidden');
+      document.getElementById('active-player-display').classList.add('hidden');
+    }
   </script>
 </body>
 </html>
