@@ -22,195 +22,143 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// ----- Full Question Bank ----- //
+/* 
+  FULL QUESTION BANK 
+  - 20 High-Risk questions (with explicit text)
+  - 40 Medium-Risk questions
+  - 60 Low-Risk questions
+*/
 
-// High Risk Questions: 20 entries
-const highRiskQuestions = [];
-for (let i = 1; i <= 20; i++) {
-  if (i === 1) {
-    highRiskQuestions.push({
-      id: 'H1',
-      text: "Will [PLAYER] die within the first 5 minutes? (Max wager 10k)",
-      multiplier: 5
-    });
-  } else {
-    highRiskQuestions.push({
-      id: `H${i}`,
-      text: `High Risk Question ${i}`,
-      multiplier: 5
-    });
+// High Risk Questions
+const highRiskQuestions = [
+  {
+    id: 'H1',
+    text: "Will the player die within the first 5 minutes? (Max wager 10k)",
+    multiplier: 5
+  },
+  {
+    id: 'H2',
+    text: "Will the player get caught during their first ghost hunt?",
+    multiplier: 5
+  },
+  {
+    id: 'H3',
+    text: "Will the player fail to find any evidence before the initial hunt?",
+    multiplier: 5
+  },
+  {
+    id: 'H4',
+    text: "Will the player run out of flashlight battery during a hunt?",
+    multiplier: 5
+  },
+  {
+    id: 'H5',
+    text: "Will the player misuse a crucifix at a critical moment?",
+    multiplier: 5
+  },
+  {
+    id: 'H6',
+    text: "Will the player accidentally drop vital equipment during an investigation?",
+    multiplier: 5
+  },
+  {
+    id: 'H7',
+    text: "Will the player ignore an essential objective and face fatal consequences?",
+    multiplier: 5
+  },
+  {
+    id: 'H8',
+    text: "Will the player be overwhelmed by ghost activity within the first 3 minutes?",
+    multiplier: 5
+  },
+  {
+    id: 'H9',
+    text: "Will the player mistakenly enter a room known for triggering ghost aggression?",
+    multiplier: 5
+  },
+  {
+    id: 'H10',
+    text: "Will the player trigger a ghost hunt by disturbing a cursed object?",
+    multiplier: 5
+  },
+  {
+    id: 'H11',
+    text: "Will the player be unable to escape during a ghost hunt?",
+    multiplier: 5
+  },
+  {
+    id: 'H12',
+    text: "Will the player face a surge of paranormal activity leading to their demise?",
+    multiplier: 5
+  },
+  {
+    id: 'H13',
+    text: "Will the player suffer a fatal mishap while collecting evidence?",
+    multiplier: 5
+  },
+  {
+    id: 'H14',
+    text: "Will the player accidentally sever communications in a dangerous situation?",
+    multiplier: 5
+  },
+  {
+    id: 'H15',
+    text: "Will the player use a smudge stick at the wrong time and fail to prevent a hunt?",
+    multiplier: 5
+  },
+  {
+    id: 'H16',
+    text: "Will the player be directly targeted by the ghost immediately after a trigger?",
+    multiplier: 5
+  },
+  {
+    id: 'H17',
+    text: "Will the player's chosen strategy backfire catastrophically at a critical moment?",
+    multiplier: 5
+  },
+  {
+    id: 'H18',
+    text: "Will the player misinterpret ghost signals and fall into a deadly trap?",
+    multiplier: 5
+  },
+  {
+    id: 'H19',
+    text: "Will the player make an impulsive decision that leads to a fatal outcome?",
+    multiplier: 5
+  },
+  {
+    id: 'H20',
+    text: "Will the player's equipment malfunction at the worst possible moment?",
+    multiplier: 5
   }
-}
+];
 
-// Medium Risk Questions: 40 entries
+// Medium Risk Questions (40)
 const mediumRiskQuestions = [];
 for (let i = 1; i <= 40; i++) {
   mediumRiskQuestions.push({
     id: `M${i}`,
-    text: `Medium Risk Question ${i}`,
-    multiplier: 3
-  });
-}
-
-// Low Risk Questions: 60 entries
-const lowRiskQuestions = [];
-for (let i = 1; i <= 60; i++) {
-  lowRiskQuestions.push({
-    id: `L${i}`,
-    text: `Low Risk Question ${i}`,
-    multiplier: 1.5
-  });
-}
-
-// ----- Helper Functions ----- //
-
-function getRandomItems(arr, count) {
-  let copy = [...arr];
-  let result = [];
-  for (let i = 0; i < count; i++) {
-    if (copy.length === 0) break;
-    let index = Math.floor(Math.random() * copy.length);
-    result.push(copy[index]);
-    copy.splice(index, 1);
-  }
-  return result;
-}
-
-// Start a new round by randomly selecting questions from the full bank.
-// Also filters out any questions containing "sanity" (case-insensitive).
-function startNewRound(existingPot = 0) {
-  const filteredHigh = highRiskQuestions.filter(q => !q.text.toLowerCase().includes("sanity"));
-  const filteredMedium = mediumRiskQuestions.filter(q => !q.text.toLowerCase().includes("sanity"));
-  const filteredLow = lowRiskQuestions.filter(q => !q.text.toLowerCase().includes("sanity"));
-  
-  const high = getRandomItems(filteredHigh, 2);
-  const medium = getRandomItems(filteredMedium, 3);
-  const low = getRandomItems(filteredLow, 4);
-  
-  currentRound = {
-    roundNumber: currentRound ? currentRound.roundNumber + 1 : 1,
-    questions: { high, medium, low },
-    bets: {},
-    pot: Number(existingPot),
-    activePlayer: null
-  };
-  return currentRound;
-}
-
-// ----- Data & State ----- //
-
-let players = {}; // { socketId: { username, balance, role, socketId } }
-let moderator = null;
-let currentRound = null;
-
-// ----- Socket.io Events ----- //
-
-io.on('connection', (socket) => {
-  console.log(`User connected: ${socket.id}`);
-
-  // Registration: data = { username, balance, role }
-  socket.on('register', (data) => {
-    const { username, balance, role } = data;
-    players[socket.id] = { username, balance: Number(balance), role, socketId: socket.id };
-    if (role === 'moderator') moderator = socket.id;
-    io.emit('playersUpdate', players);
-  });
-
-  // Moderator starts a new round
-  socket.on('startRound', (existingPot) => {
-    if (socket.id === moderator) {
-      const round = startNewRound(Number(existingPot) || 0);
-      io.emit('newRound', round);
-    }
-  });
-
-  // Moderator sets the active player (to sit out)
-  socket.on('setActivePlayer', (activePlayerId) => {
-    if (socket.id === moderator && currentRound) {
-      currentRound.activePlayer = activePlayerId;
-      io.emit('activePlayerSet', activePlayerId);
-    }
-  });
-
-  // Player places a bet on a given question
-  socket.on('placeBet', (data) => {
-    if (!currentRound) return;
-    const player = players[socket.id];
-    const wager = Number(data.wager);
-    // Prevent the active player from betting
-    if (currentRound.activePlayer === socket.id) return;
-    if (player && wager <= player.balance) {
-      player.balance -= wager;
-      if (!currentRound.bets[socket.id]) {
-        currentRound.bets[socket.id] = [];
-      }
-      currentRound.bets[socket.id].push({ questionId: data.questionId, wager });
-      currentRound.pot += wager;
-      io.emit('playersUpdate', players);
-      io.emit('roundBetsUpdate', currentRound.bets, currentRound.pot);
-    }
-  });
-
-  // Moderator ends the round by sending outcomes (object: { questionId: true/false })
-  socket.on('endRound', (outcomes) => {
-    if (socket.id !== moderator || !currentRound) return;
-    let roundStats = { correctBets: {}, incorrectBets: {} };
-    for (let sid in currentRound.bets) {
-      const bets = currentRound.bets[sid];
-      let totalWin = 0;
-      bets.forEach(bet => {
-        const question = [...highRiskQuestions, ...mediumRiskQuestions, ...lowRiskQuestions]
-          .find(q => q.id === bet.questionId);
-        if (!question) return;
-        const outcome = outcomes[bet.questionId];
-        // Prepare stats
-        if (!roundStats.correctBets[bet.questionId]) roundStats.correctBets[bet.questionId] = [];
-        if (!roundStats.incorrectBets[bet.questionId]) roundStats.incorrectBets[bet.questionId] = [];
-        if (outcome === true) {
-          const payout = bet.wager * question.multiplier;
-          totalWin += payout;
-          if (currentRound.pot >= payout) {
-            currentRound.pot -= payout;
-          } else {
-            totalWin += currentRound.pot;
-            currentRound.pot = 0;
-          }
-          roundStats.correctBets[bet.questionId].push({ player: players[sid].username, wager: bet.wager, payout });
-        } else {
-          roundStats.incorrectBets[bet.questionId].push({ player: players[sid].username, wager: bet.wager });
-        }
-      });
-      if (players[sid]) {
-        players[sid].balance += totalWin;
-      }
-    }
-    const results = {
-      players,
-      pot: currentRound.pot,
-      bets: currentRound.bets,
-      outcomes,
-      roundStats,
-      roundNumber: currentRound.roundNumber
-    };
-    io.emit('roundResults', results);
-    currentRound = null;
-  });
-  
-  // Allow client to request a player's name by socket id (for active player display)
-  socket.on('getPlayerName', (socketId) => {
-    if (players[socketId]) {
-      socket.emit('activePlayerName', players[socketId]);
-    }
-  });
-
-  socket.on('disconnect', () => {
-    console.log(`User disconnected: ${socket.id}`);
-    delete players[socket.id];
-    io.emit('playersUpdate', players);
-  });
-});
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+    text: (() => {
+      // Each question is written out explicitly.
+      switch(i) {
+        case 1: return "Will the first ghost event be a sudden light flicker?";
+        case 2: return "Will the player burn a smudge stick before it's needed?";
+        case 3: return "Will the player accidentally trigger a ghost event by making noise?";
+        case 4: return "Will the player misidentify a crucial piece of evidence?";
+        case 5: return "Will the player leave an important tool behind?";
+        case 6: return "Will the player spend too much time checking a supposedly safe room?";
+        case 7: return "Will the player take a wrong turn and get lost in the building?";
+        case 8: return "Will the player fail to complete an objective due to panic?";
+        case 9: return "Will the player overuse battery power on unnecessary equipment?";
+        case 10: return "Will the player trigger a minor ghost event by accident?";
+        case 11: return "Will the player receive misleading readings from their equipment?";
+        case 12: return "Will the player ignore a crucial clue during the investigation?";
+        case 13: return "Will the player hesitate too long when confronting paranormal activity?";
+        case 14: return "Will the player experience a communication breakdown with their gear?";
+        case 15: return "Will the player be distracted by a false positive ghost event?";
+        case 16: return "Will the player underestimate the ghost’s movement patterns?";
+        case 17: return "Will the player misinterpret the ghost’s behavior during an event?";
+        case 18: return "Will the player fail to secure an area before a hunt begins?";
+        case 19: return "Will the player neglect to update their evidence log in time?";
+        case 20: return "Will the player rely too heavily on one piece of equipment?";
+        case 21: return "Will the player suffer a minor e
