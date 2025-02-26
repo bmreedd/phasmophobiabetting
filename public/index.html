@@ -86,9 +86,7 @@
       <button onclick="startRound()">Start New Round</button>
       <br/><br/>
       <label for="active-player-select">Select Active Player (to sit out):</label>
-      <select id="active-player-select">
-        <!-- Options populated dynamically -->
-      </select>
+      <select id="active-player-select"></select>
       <button onclick="setActivePlayer()">Set Active Player</button>
       <br/><br/>
       <div id="outcomes-container" class="hidden">
@@ -182,7 +180,7 @@
       const betSelect = document.getElementById('bet-question-select');
       betSelect.innerHTML = "";
       roundQuestions.forEach(q => {
-        if (q.text.toLowerCase().includes("sanity")) return; // skip sanity questions
+        if (q.text.toLowerCase().includes("sanity")) return;
         let optionText = q.id + ": " + q.text;
         if (q.id.startsWith('H')) {
           optionText += " (Multiplier: " + q.multiplier + "x)";
@@ -197,13 +195,21 @@
       if (myRole === "moderator") {
         const activeSelect = document.getElementById('active-player-select');
         activeSelect.innerHTML = "";
+        let nonModeratorPlayers = [];
         for (let id in window.players) {
           if (id !== mySocketId && window.players[id].role !== "moderator") {
-            const option = document.createElement('option');
-            option.value = id;
-            option.innerText = window.players[id].username;
-            activeSelect.appendChild(option);
+            nonModeratorPlayers.push(window.players[id]);
           }
+        }
+        if (nonModeratorPlayers.length === 0) {
+          activeSelect.innerHTML = "<option value=''>No other players</option>";
+        } else {
+          nonModeratorPlayers.forEach(p => {
+            const option = document.createElement('option');
+            option.value = p.socketId;
+            option.innerText = p.username;
+            activeSelect.appendChild(option);
+          });
         }
       }
       
@@ -230,7 +236,7 @@
     function setActivePlayer() {
       const activeSelect = document.getElementById('active-player-select');
       const selectedId = activeSelect.value;
-      socket.emit('setActivePlayer', selectedId);
+      socket.emit('setActivePlayer', selectedId || null);
     }
     
     function placeBet() {
@@ -323,7 +329,7 @@
       document.getElementById('active-player-display').classList.add('hidden');
     }
     
-    // Expose functions to global scope for button onclick handlers
+    // Expose functions globally for button onclick handlers
     window.registerUser = registerUser;
     window.startRound = startRound;
     window.placeBet = placeBet;
