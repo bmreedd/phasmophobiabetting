@@ -11,6 +11,7 @@
     h1, h3, h4 { color: #333; }
     #login-container, #game-container, #transition-container { margin-bottom: 20px; }
     #instructions { background: #f8f8f8; padding: 10px; border: 1px solid #ccc; }
+    button { padding: 8px 12px; font-size: 14px; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -42,6 +43,7 @@
   
   <!-- Main Game Interface -->
   <div id="game-container" class="hidden">
+    <!-- Player Info -->
     <div id="player-info">
       <p>Welcome, <span id="player-name"></span>! Your balance: <span id="player-balance"></span> gold.
          Current Pot: <span id="pot-display">0</span></p>
@@ -50,6 +52,7 @@
       </div>
     </div>
     
+    <!-- Instructions -->
     <div id="instructions">
       <p>
         In each round, you'll see a set of betting questions. Place your bets by entering the question ID and wager amount.
@@ -99,6 +102,7 @@
   <div id="transition-container" class="hidden">
     <h3>Round <span id="transition-round-number"></span> Results</h3>
     <div id="round-stats"></div>
+    <!-- Next Round Button -->
     <button onclick="nextRound()">Next Round</button>
   </div>
   
@@ -136,7 +140,7 @@
     }
     
     socket.on('newRound', (round) => {
-      // Hide transition page if visible
+      // Hide transition page if visible and reset the interface
       document.getElementById('transition-container').classList.add('hidden');
       document.getElementById('game-container').classList.remove('hidden');
       
@@ -189,14 +193,12 @@
     });
     
     socket.on('activePlayerSet', (activeId) => {
-      // When active player is set, request and display their name
       socket.emit('getPlayerName', activeId);
     });
     
     socket.on('activePlayerName', (data) => {
       document.getElementById('active-player-display').classList.remove('hidden');
       document.getElementById('active-player-name').innerText = data.username;
-      // If this client is the active player, disable betting interface
       if (data.socketId === mySocketId) {
         document.getElementById('betting-interface').classList.add('hidden');
       }
@@ -229,7 +231,6 @@
     function submitOutcomes() {
       const outcomes = {};
       const outcomesContainer = document.getElementById('outcomes-container');
-      // Auto-generate outcome selectors if not already present
       if (outcomesContainer.innerHTML === "") {
         outcomesContainer.innerHTML = "<h4>Set Outcomes for Each Question:</h4>";
         const questionsDiv = document.getElementById('questions');
@@ -247,7 +248,6 @@
         });
         outcomesContainer.classList.remove('hidden');
       }
-      // Gather outcomes
       const selects = outcomesContainer.querySelectorAll('select');
       selects.forEach(select => {
         const qid = select.id.replace('outcome-', '');
@@ -270,7 +270,7 @@
     });
     
     socket.on('roundResults', (data) => {
-      // Show transition page with round stats
+      // Hide game interface and show transition page with round stats
       document.getElementById('game-container').classList.add('hidden');
       document.getElementById('transition-container').classList.remove('hidden');
       document.getElementById('transition-round-number').innerText = data.roundNumber;
@@ -279,7 +279,6 @@
       const potInfo = document.createElement('p');
       potInfo.innerText = `Final Pot: ${data.pot} gold`;
       statsDiv.appendChild(potInfo);
-      // Display stats for each question
       for (let qid in data.roundStats.correctBets) {
         const correct = data.roundStats.correctBets[qid] || [];
         const incorrect = data.roundStats.incorrectBets[qid] || [];
@@ -290,7 +289,7 @@
     });
     
     function nextRound() {
-      // Hide transition page and reset UI for the next round
+      // Reset transition page and UI for the next round
       document.getElementById('transition-container').classList.add('hidden');
       document.getElementById('game-container').classList.remove('hidden');
       document.getElementById('round-info').classList.add('hidden');
