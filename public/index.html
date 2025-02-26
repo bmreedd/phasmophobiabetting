@@ -57,7 +57,8 @@
       <p>
         In each round, you'll see a set of betting questions. Place your bets by selecting a question from the dropdown
         (only the pre‑selected questions for that round appear) and entering your wager amount. When you click "Submit Bet,"
-        that question is removed so you can't bet on it twice. The moderator will start rounds and later choose outcomes using dropdowns.
+        the chosen question is removed so you can't bet on it twice.
+        The moderator will start rounds and later choose outcomes using dropdowns.
       </p>
     </div>
     
@@ -110,7 +111,7 @@
     const socket = io();
     let myRole = "player";
     let mySocketId = "";
-    let roundQuestions = []; // Will hold all questions for the current round
+    let roundQuestions = []; // holds the questions for the current round
 
     socket.on('connect', () => {
       mySocketId = socket.id;
@@ -155,7 +156,8 @@
       const questionsDiv = document.getElementById('questions');
       questionsDiv.innerHTML = "";
       const { high, medium, low } = round.questions;
-      roundQuestions = [...high, ...medium, ...low]; // store all questions for use in dropdown
+      roundQuestions = [...high, ...medium, ...low]; // store for dropdown population
+      
       function addQuestions(arr, label) {
         const header = document.createElement('h4');
         header.innerText = label;
@@ -175,8 +177,7 @@
       const betSelect = document.getElementById('bet-question-select');
       betSelect.innerHTML = "";
       roundQuestions.forEach(q => {
-        // Optionally filter out sanity-related questions, though server already did
-        if (q.text.toLowerCase().includes("sanity")) return;
+        if (q.text.toLowerCase().includes("sanity")) return; // skip sanity questions
         const option = document.createElement('option');
         option.value = q.id;
         option.innerText = `${q.id}: ${q.text} (Multiplier: ${q.multiplier}x)`;
@@ -235,9 +236,7 @@
       
       // Remove the selected question from the dropdown and displayed list
       const optionToRemove = betSelect.querySelector(`option[value="${questionId}"]`);
-      if (optionToRemove) {
-        optionToRemove.remove();
-      }
+      if (optionToRemove) { optionToRemove.remove(); }
       const qElem = document.querySelector(`[data-question-id="${questionId}"]`);
       if (qElem) { qElem.remove(); }
       
