@@ -119,6 +119,7 @@
     });
     
     function registerUser() {
+      console.log("registerUser() called");
       const username = document.getElementById('username').value;
       const balance = document.getElementById('balance').value;
       myRole = document.querySelector('input[name="role"]:checked').value;
@@ -164,7 +165,6 @@
         questionsDiv.appendChild(header);
         arr.forEach(q => {
           const p = document.createElement('p');
-          // Only show multiplier for high risk questions
           let text = q.id + ": " + q.text;
           if (q.id.startsWith('H')) {
             text += " (Multiplier: " + q.multiplier + "x)";
@@ -182,8 +182,7 @@
       const betSelect = document.getElementById('bet-question-select');
       betSelect.innerHTML = "";
       roundQuestions.forEach(q => {
-        // Skip sanity questions (server already filtered, but double-check)
-        if (q.text.toLowerCase().includes("sanity")) return;
+        if (q.text.toLowerCase().includes("sanity")) return; // skip sanity questions
         let optionText = q.id + ": " + q.text;
         if (q.id.startsWith('H')) {
           optionText += " (Multiplier: " + q.multiplier + "x)";
@@ -320,4 +319,17 @@
       document.getElementById('game-container').classList.remove('hidden');
       document.getElementById('round-info').classList.add('hidden');
       document.getElementById('betting-interface').classList.add('hidden');
-      document.getElementById('outcomes-container').classList.add(
+      document.getElementById('outcomes-container').classList.add('hidden');
+      document.getElementById('active-player-display').classList.add('hidden');
+    }
+    
+    // Expose functions to global scope for button onclick handlers
+    window.registerUser = registerUser;
+    window.startRound = startRound;
+    window.placeBet = placeBet;
+    window.setActivePlayer = setActivePlayer;
+    window.submitOutcomes = submitOutcomes;
+    window.nextRound = nextRound;
+  </script>
+</body>
+</html>
