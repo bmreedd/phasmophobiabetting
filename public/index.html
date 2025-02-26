@@ -62,7 +62,7 @@
       </p>
     </div>
     
-    <!-- Round Info & Questions -->
+    <!-- Round Info & Questions Display -->
     <div id="round-info" class="hidden">
       <h3>Round <span id="round-number"></span> Questions:</h3>
       <div id="questions"></div>
@@ -111,7 +111,7 @@
     const socket = io();
     let myRole = "player";
     let mySocketId = "";
-    let roundQuestions = []; // holds the questions for the current round
+    let roundQuestions = []; // holds the current round's questions
 
     socket.on('connect', () => {
       mySocketId = socket.id;
@@ -142,7 +142,7 @@
     }
     
     socket.on('newRound', (round) => {
-      // Hide transition page if visible and reset the interface
+      // Hide transition page if visible and reset interface
       document.getElementById('transition-container').classList.add('hidden');
       document.getElementById('game-container').classList.remove('hidden');
       
@@ -156,7 +156,7 @@
       const questionsDiv = document.getElementById('questions');
       questionsDiv.innerHTML = "";
       const { high, medium, low } = round.questions;
-      roundQuestions = [...high, ...medium, ...low]; // store for dropdown population
+      roundQuestions = [...high, ...medium, ...low];
       
       function addQuestions(arr, label) {
         const header = document.createElement('h4');
@@ -164,7 +164,12 @@
         questionsDiv.appendChild(header);
         arr.forEach(q => {
           const p = document.createElement('p');
-          p.innerText = `${q.id}: ${q.text} (Multiplier: ${q.multiplier}x)`;
+          // Only show multiplier for high risk questions
+          let text = q.id + ": " + q.text;
+          if (q.id.startsWith('H')) {
+            text += " (Multiplier: " + q.multiplier + "x)";
+          }
+          p.innerText = text;
           p.setAttribute('data-question-id', q.id);
           questionsDiv.appendChild(p);
         });
@@ -177,10 +182,15 @@
       const betSelect = document.getElementById('bet-question-select');
       betSelect.innerHTML = "";
       roundQuestions.forEach(q => {
-        if (q.text.toLowerCase().includes("sanity")) return; // skip sanity questions
+        // Skip sanity questions (server already filtered, but double-check)
+        if (q.text.toLowerCase().includes("sanity")) return;
+        let optionText = q.id + ": " + q.text;
+        if (q.id.startsWith('H')) {
+          optionText += " (Multiplier: " + q.multiplier + "x)";
+        }
         const option = document.createElement('option');
         option.value = q.id;
-        option.innerText = `${q.id}: ${q.text} (Multiplier: ${q.multiplier}x)`;
+        option.innerText = optionText;
         betSelect.appendChild(option);
       });
       
@@ -234,7 +244,7 @@
       }
       socket.emit('placeBet', { questionId, wager });
       
-      // Remove the selected question from the dropdown and displayed list
+      // Remove the selected question from dropdown and displayed list
       const optionToRemove = betSelect.querySelector(`option[value="${questionId}"]`);
       if (optionToRemove) { optionToRemove.remove(); }
       const qElem = document.querySelector(`[data-question-id="${questionId}"]`);
@@ -310,9 +320,4 @@
       document.getElementById('game-container').classList.remove('hidden');
       document.getElementById('round-info').classList.add('hidden');
       document.getElementById('betting-interface').classList.add('hidden');
-      document.getElementById('outcomes-container').classList.add('hidden');
-      document.getElementById('active-player-display').classList.add('hidden');
-    }
-  </script>
-</body>
-</html>
+      document.getElementById('outcomes-container').classList.add(
