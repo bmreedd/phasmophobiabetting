@@ -23,13 +23,13 @@ app.get("/", (req, res) => {
 });
 
 /* 
-  FULL QUESTION BANK 
-  - 20 High-Risk questions (with explicit text)
-  - 40 Medium-Risk questions
-  - 60 Low-Risk questions
+  FULL QUESTION BANK:
+  - 20 High-Risk questions (with explicit text and multipliers shown)
+  - 40 Medium-Risk questions (fully written out)
+  - 60 Low-Risk questions (fully written out)
 */
 
-// High Risk Questions
+// High Risk Questions (20)
 const highRiskQuestions = [
   {
     id: 'H1',
@@ -136,140 +136,138 @@ const highRiskQuestions = [
 // Medium Risk Questions (40)
 const mediumRiskQuestions = [];
 for (let i = 1; i <= 40; i++) {
-  mediumRiskQuestions.push({
-    id: `M${i}`,
-    text: (() => {
-      // Each question is written out explicitly.
-      switch(i) {
-        case 1: return "Will the first ghost event be a sudden light flicker?";
-        case 2: return "Will the player burn a smudge stick before it's needed?";
-        case 3: return "Will the player accidentally trigger a ghost event by making noise?";
-        case 4: return "Will the player misidentify a crucial piece of evidence?";
-        case 5: return "Will the player leave an important tool behind?";
-        case 6: return "Will the player spend too much time checking a supposedly safe room?";
-        case 7: return "Will the player take a wrong turn and get lost in the building?";
-        case 8: return "Will the player fail to complete an objective due to panic?";
-        case 9: return "Will the player overuse battery power on unnecessary equipment?";
-        case 10: return "Will the player trigger a minor ghost event by accident?";
-        case 11: return "Will the player receive misleading readings from their equipment?";
-        case 12: return "Will the player ignore a crucial clue during the investigation?";
-        case 13: return "Will the player hesitate too long when confronting paranormal activity?";
-        case 14: return "Will the player experience a communication breakdown with their gear?";
-        case 15: return "Will the player be distracted by a false positive ghost event?";
-        case 16: return "Will the player underestimate the ghost’s movement patterns?";
-        case 17: return "Will the player misinterpret the ghost’s behavior during an event?";
-        case 18: return "Will the player fail to secure an area before a hunt begins?";
-        case 19: return "Will the player neglect to update their evidence log in time?";
-        case 20: return "Will the player rely too heavily on one piece of equipment?";
-        case 21: return "Will the player suffer a minor equipment failure at a critical moment?";
-        case 22: return "Will the player forget to check a key location for evidence?";
-        case 23: return "Will the player miscalculate the time needed to complete an objective?";
-        case 24: return "Will the player get startled by an unexpected sound?";
-        case 25: return "Will the player have a brief lapse in judgment during high tension?";
-        case 26: return "Will the player momentarily lose focus during a routine check?";
-        case 27: return "Will the player make a tactical error in positioning during an event?";
-        case 28: return "Will the player overlook a subtle paranormal clue?";
-        case 29: return "Will the player be overly cautious and miss an opportunity?";
-        case 30: return "Will the player experience an unexpected battery drain issue?";
-        case 31: return "Will the player misjudge the distance to a critical objective?";
-        case 32: return "Will the player underestimate the ghost's overall activity?";
-        case 33: return "Will the player experience a short-term sensory overload?";
-        case 34: return "Will the player briefly doubt their investigation strategy?";
-        case 35: return "Will the player mistakenly trust unreliable evidence?";
-        case 36: return "Will the player choose an incorrect route during a critical moment?";
-        case 37: return "Will the player get a false reading on their paranormal device?";
-        case 38: return "Will the player be momentarily paralyzed by fear?";
-        case 39: return "Will the player fail to notice a subtle change in ghost behavior?";
-        case 40: return "Will the player make an error in timing their equipment usage?";
-        default: return `Medium Risk Question ${i}`;
-      }
-    })(),
-    multiplier: 3
-  });
+  let text;
+  switch(i) {
+    case 1: text = "Will the first ghost event be a sudden light flicker?"; break;
+    case 2: text = "Will the player burn a smudge stick before it's needed?"; break;
+    case 3: text = "Will the player accidentally trigger a ghost event by making noise?"; break;
+    case 4: text = "Will the player misidentify a crucial piece of evidence?"; break;
+    case 5: text = "Will the player leave an important tool behind?"; break;
+    case 6: text = "Will the player spend too much time checking a supposedly safe room?"; break;
+    case 7: text = "Will the player take a wrong turn and get lost in the building?"; break;
+    case 8: text = "Will the player fail to complete an objective due to panic?"; break;
+    case 9: text = "Will the player overuse battery power on unnecessary equipment?"; break;
+    case 10: text = "Will the player trigger a minor ghost event by accident?"; break;
+    case 11: text = "Will the player receive misleading readings from their equipment?"; break;
+    case 12: text = "Will the player ignore a crucial clue during the investigation?"; break;
+    case 13: text = "Will the player hesitate too long when confronting paranormal activity?"; break;
+    case 14: text = "Will the player experience a communication breakdown with their gear?"; break;
+    case 15: text = "Will the player be distracted by a false positive ghost event?"; break;
+    case 16: text = "Will the player underestimate the ghost’s movement patterns?"; break;
+    case 17: text = "Will the player misinterpret the ghost’s behavior during an event?"; break;
+    case 18: text = "Will the player fail to secure an area before a hunt begins?"; break;
+    case 19: text = "Will the player neglect to update their evidence log in time?"; break;
+    case 20: text = "Will the player rely too heavily on one piece of equipment?"; break;
+    case 21: text = "Will the player suffer a minor equipment failure at a critical moment?"; break;
+    case 22: text = "Will the player forget to check a key location for evidence?"; break;
+    case 23: text = "Will the player miscalculate the time needed to complete an objective?"; break;
+    case 24: text = "Will the player get startled by an unexpected sound?"; break;
+    case 25: text = "Will the player have a brief lapse in judgment during high tension?"; break;
+    case 26: text = "Will the player momentarily lose focus during a routine check?"; break;
+    case 27: text = "Will the player make a tactical error in positioning during an event?"; break;
+    case 28: text = "Will the player overlook a subtle paranormal clue?"; break;
+    case 29: text = "Will the player be overly cautious and miss an opportunity?"; break;
+    case 30: text = "Will the player experience an unexpected battery drain issue?"; break;
+    case 31: text = "Will the player misjudge the distance to a critical objective?"; break;
+    case 32: text = "Will the player underestimate the ghost's overall activity?"; break;
+    case 33: text = "Will the player experience a short-term sensory overload?"; break;
+    case 34: text = "Will the player briefly doubt their investigation strategy?"; break;
+    case 35: text = "Will the player mistakenly trust unreliable evidence?"; break;
+    case 36: text = "Will the player choose an incorrect route during a critical moment?"; break;
+    case 37: text = "Will the player get a false reading on their paranormal device?"; break;
+    case 38: text = "Will the player be momentarily paralyzed by fear?"; break;
+    case 39: text = "Will the player fail to notice a subtle change in ghost behavior?"; break;
+    case 40: text = "Will the player make an error in timing their equipment usage?"; break;
+    default: text = `Medium Risk Question ${i}`;
+  }
+  mediumRiskQuestions.push({ id: `M${i}`, text, multiplier: 3 });
 }
 
 // Low Risk Questions (60)
 const lowRiskQuestions = [];
 for (let i = 1; i <= 60; i++) {
-  lowRiskQuestions.push({
-    id: `L${i}`,
-    text: (() => {
-      switch(i) {
-        case 1: return "Will the player forget the house keys?";
-        case 2: return "Will the player check the truck twice before entering the house?";
-        case 3: return "Will the player leave the flashlight behind?";
-        case 4: return "Will the player misplace a battery pack?";
-        case 5: return "Will the player forget to pick up an important piece of evidence?";
-        case 6: return "Will the player take an unnecessary detour during the investigation?";
-        case 7: return "Will the player accidentally trigger a minor noise event?";
-        case 8: return "Will the player leave a door open unintentionally?";
-        case 9: return "Will the player forget to reset a crucial equipment setting?";
-        case 10: return "Will the player miss an obvious clue in the environment?";
-        case 11: return "Will the player double-check an area they already inspected?";
-        case 12: return "Will the player be momentarily distracted by background sounds?";
-        case 13: return "Will the player stumble over a loose floorboard?";
-        case 14: return "Will the player inadvertently leave a window open?";
-        case 15: return "Will the player lose track of time during their investigation?";
-        case 16: return "Will the player skip over a mundane but important task?";
-        case 17: return "Will the player ignore a subtle environmental change?";
-        case 18: return "Will the player forget to check the map at a crucial moment?";
-        case 19: return "Will the player be too hesitant to approach a suspicious area?";
-        case 20: return "Will the player misjudge the position of a common object?";
-        case 21: return "Will the player take a detour that wastes valuable time?";
-        case 22: return "Will the player overlook a routine detail in their search?";
-        case 23: return "Will the player experience a minor lapse in attention?";
-        case 24: return "Will the player be momentarily disoriented in a familiar area?";
-        case 25: return "Will the player accidentally trigger a small alarm?";
-        case 26: return "Will the player forget to document a simple observation?";
-        case 27: return "Will the player pause too long before proceeding with an objective?";
-        case 28: return "Will the player leave a light on when it's not needed?";
-        case 29: return "Will the player misplace a non-critical piece of equipment?";
-        case 30: return "Will the player experience a brief moment of clumsiness?";
-        case 31: return "Will the player take an unnecessarily long pause during routine checks?";
-        case 32: return "Will the player overlook a standard inspection step?";
-        case 33: return "Will the player lose focus on a simple task momentarily?";
-        case 34: return "Will the player be slightly delayed arriving at a key location?";
-        case 35: return "Will the player overprepare and cause a minor delay?";
-        case 36: return "Will the player miss a routine step in their process?";
-        case 37: return "Will the player suffer a brief memory lapse about an objective?";
-        case 38: return "Will the player unknowingly repeat a non-essential action?";
-        case 39: return "Will the player overthink a trivial detail?";
-        case 40: return "Will the player experience a short delay in equipment setup?";
-        case 41: return "Will the player overlook a minor environmental cue?";
-        case 42: return "Will the player make a small mistake while checking their gear?";
-        case 43: return "Will the player hesitate briefly before moving on?";
-        case 44: return "Will the player repeat a standard procedure unnecessarily?";
-        case 45: return "Will the player question an obvious clue for a moment?";
-        case 46: return "Will the player experience a slight delay in decision making?";
-        case 47: return "Will the player misinterpret a minor signal from equipment?";
-        case 48: return "Will the player make a timing error in a simple task?";
-        case 49: return "Will the player be distracted by an unimportant detail?";
-        case 50: return "Will the player overlook a minor instruction during routine checks?";
-        case 51: return "Will the player react a tad too slowly to an event?";
-        case 52: return "Will the player miss a non-critical environmental signal?";
-        case 53: return "Will the player experience a brief moment of uncertainty?";
-        case 54: return "Will the player make a minor error during a simple inspection?";
-        case 55: return "Will the player falter momentarily on a basic task?";
-        case 56: return "Will the player execute a routine step slightly off schedule?";
-        case 57: return "Will the player fail to notice a small environmental change?";
-        case 58: return "Will the player have a short lapse in routine vigilance?";
-        case 59: return "Will the player take a little extra time on an ordinary procedure?";
-        case 60: return "Will the player forget a standard detail during a routine round?";
-        default: return `Low Risk Question ${i}`;
-      }
-    })(),
-    multiplier: 1.5
-  });
+  let text;
+  switch(i) {
+    case 1: text = "Will the player forget the house keys?"; break;
+    case 2: text = "Will the player check the truck twice before entering the house?"; break;
+    case 3: text = "Will the player leave the flashlight behind?"; break;
+    case 4: text = "Will the player misplace a battery pack?"; break;
+    case 5: text = "Will the player forget to pick up an important piece of evidence?"; break;
+    case 6: text = "Will the player take an unnecessary detour during the investigation?"; break;
+    case 7: text = "Will the player accidentally trigger a minor noise event?"; break;
+    case 8: text = "Will the player leave a door open unintentionally?"; break;
+    case 9: text = "Will the player forget to reset a crucial equipment setting?"; break;
+    case 10: text = "Will the player miss an obvious clue in the environment?"; break;
+    case 11: text = "Will the player double-check an area they already inspected?"; break;
+    case 12: text = "Will the player be momentarily distracted by background sounds?"; break;
+    case 13: text = "Will the player stumble over a loose floorboard?"; break;
+    case 14: text = "Will the player inadvertently leave a window open?"; break;
+    case 15: text = "Will the player lose track of time during their investigation?"; break;
+    case 16: text = "Will the player skip over a mundane but important task?"; break;
+    case 17: text = "Will the player ignore a subtle environmental change?"; break;
+    case 18: text = "Will the player forget to check the map at a crucial moment?"; break;
+    case 19: text = "Will the player be too hesitant to approach a suspicious area?"; break;
+    case 20: text = "Will the player misjudge the position of a common object?"; break;
+    case 21: text = "Will the player take a detour that wastes valuable time?"; break;
+    case 22: text = "Will the player overlook a routine detail in their search?"; break;
+    case 23: text = "Will the player experience a minor lapse in attention?"; break;
+    case 24: text = "Will the player be momentarily disoriented in a familiar area?"; break;
+    case 25: text = "Will the player accidentally trigger a small alarm?"; break;
+    case 26: text = "Will the player forget to document a simple observation?"; break;
+    case 27: text = "Will the player pause too long before proceeding with an objective?"; break;
+    case 28: text = "Will the player leave a light on when it's not needed?"; break;
+    case 29: text = "Will the player misplace a non-critical piece of equipment?"; break;
+    case 30: text = "Will the player experience a brief moment of clumsiness?"; break;
+    case 31: text = "Will the player take an unnecessarily long pause during routine checks?"; break;
+    case 32: text = "Will the player overlook a standard inspection step?"; break;
+    case 33: text = "Will the player lose focus on a simple task momentarily?"; break;
+    case 34: text = "Will the player be slightly delayed arriving at a key location?"; break;
+    case 35: text = "Will the player overprepare and cause a minor delay?"; break;
+    case 36: text = "Will the player miss a routine step in their process?"; break;
+    case 37: text = "Will the player suffer a brief memory lapse about an objective?"; break;
+    case 38: text = "Will the player unknowingly repeat a non-essential action?"; break;
+    case 39: text = "Will the player overthink a trivial detail?"; break;
+    case 40: text = "Will the player experience a short delay in equipment setup?"; break;
+    case 41: text = "Will the player overlook a minor environmental cue?"; break;
+    case 42: text = "Will the player make a small mistake while checking their gear?"; break;
+    case 43: text = "Will the player hesitate briefly before moving on?"; break;
+    case 44: text = "Will the player repeat a standard procedure unnecessarily?"; break;
+    case 45: text = "Will the player question an obvious clue for a moment?"; break;
+    case 46: text = "Will the player experience a slight delay in decision making?"; break;
+    case 47: text = "Will the player misinterpret a minor signal from equipment?"; break;
+    case 48: text = "Will the player make a timing error in a simple task?"; break;
+    case 49: text = "Will the player be distracted by an unimportant detail?"; break;
+    case 50: text = "Will the player overlook a minor instruction during routine checks?"; break;
+    case 51: text = "Will the player react a tad too slowly to an event?"; break;
+    case 52: text = "Will the player miss a non-critical environmental signal?"; break;
+    case 53: text = "Will the player experience a brief moment of uncertainty?"; break;
+    case 54: text = "Will the player make a minor error during a simple inspection?"; break;
+    case 55: text = "Will the player falter momentarily on a basic task?"; break;
+    case 56: text = "Will the player execute a routine step slightly off schedule?"; break;
+    case 57: text = "Will the player fail to notice a small environmental change?"; break;
+    case 58: text = "Will the player have a short lapse in routine vigilance?"; break;
+    case 59: text = "Will the player take a little extra time on an ordinary procedure?"; break;
+    case 60: text = "Will the player forget a standard detail during a routine round?"; break;
+    default: text = `Low Risk Question ${i}`;
+  }
+  lowRiskQuestions.push({ id: `L${i}`, text, multiplier: 1.5 });
 }
 
 // ----- Helper Function: Start New Round ----- //
 
-let currentRound = null;
-let players = {}; // { socketId: { username, balance, role, socketId } }
-let moderator = null;
+function getRandomItems(arr, count) {
+  let copy = [...arr];
+  let result = [];
+  for (let i = 0; i < count; i++) {
+    if (copy.length === 0) break;
+    let index = Math.floor(Math.random() * copy.length);
+    result.push(copy[index]);
+    copy.splice(index, 1);
+  }
+  return result;
+}
 
 function startNewRound(existingPot = 0) {
-  // Filter out sanity-related questions
   const filteredHigh = highRiskQuestions.filter(q => !q.text.toLowerCase().includes("sanity"));
   const filteredMedium = mediumRiskQuestions.filter(q => !q.text.toLowerCase().includes("sanity"));
   const filteredLow = lowRiskQuestions.filter(q => !q.text.toLowerCase().includes("sanity"));
@@ -288,6 +286,12 @@ function startNewRound(existingPot = 0) {
   return currentRound;
 }
 
+// ----- Data & State ----- //
+
+let currentRound = null;
+let players = {}; // { socketId: { username, balance, role, socketId } }
+let moderator = null;
+
 // ----- Socket.io Events ----- //
 
 io.on('connection', (socket) => {
@@ -301,7 +305,7 @@ io.on('connection', (socket) => {
     io.emit('playersUpdate', players);
   });
 
-  // Moderator starts a new round
+  // Moderator starts a new round (allowing rounds even if there are no other players)
   socket.on('startRound', (existingPot) => {
     if (socket.id === moderator) {
       const round = startNewRound(Number(existingPot) || 0);
@@ -312,17 +316,18 @@ io.on('connection', (socket) => {
   // Moderator sets the active player (to sit out)
   socket.on('setActivePlayer', (activePlayerId) => {
     if (socket.id === moderator && currentRound) {
-      currentRound.activePlayer = activePlayerId;
-      io.emit('activePlayerSet', activePlayerId);
+      // Allow null or empty activePlayerId if no other players exist
+      currentRound.activePlayer = activePlayerId || null;
+      io.emit('activePlayerSet', currentRound.activePlayer);
     }
   });
 
-  // Player places a bet on a given question (chosen from dropdown)
+  // Player places a bet on a given question (selected from dropdown)
   socket.on('placeBet', (data) => {
     if (!currentRound) return;
     const player = players[socket.id];
     const wager = Number(data.wager);
-    // Prevent active player from betting
+    // Prevent the active player from betting
     if (currentRound.activePlayer === socket.id) return;
     if (player && wager <= player.balance) {
       player.balance -= wager;
